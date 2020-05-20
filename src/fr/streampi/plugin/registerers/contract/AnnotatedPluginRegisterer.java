@@ -6,9 +6,9 @@ import java.util.Map;
 
 public interface AnnotatedPluginRegisterer<T, A extends Annotation> {
 
-	public Map<A, T> getMappedObjects(Object... params) throws InstantiationException, IllegalAccessException,
+	public Map<A, ? extends T> getMappedObjects(Object... params) throws InstantiationException, IllegalAccessException,
 			IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException;
 
-	public Map<A, Class<T>> getMappedClasses();
+	public Map<A, Class<? extends T>> getMappedClasses();
 
 }

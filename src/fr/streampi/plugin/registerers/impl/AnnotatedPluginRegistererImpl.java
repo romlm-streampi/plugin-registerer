@@ -73,14 +73,14 @@ public class AnnotatedPluginRegistererImpl<T, A extends Annotation> implements A
 	}
 
 	@SuppressWarnings("unchecked")
-	private Map<A, Class<T>> loadModule(File file, JarFile jarFile) {
+	private Map<A, Class<? extends T>> loadModule(File file, JarFile jarFile) {
 		ModuleFinder finder = ModuleFinder.of(file.toPath());
 		List<String> names = finder.findAll().stream().map(x -> x.descriptor().name()).collect(Collectors.toList());
 
 		Configuration cf = parentLayer.configuration().resolve(finder, ModuleFinder.of(), names);
 
 		ModuleLayer layer = parentLayer.defineModulesWithOneLoader(cf, ClassLoader.getSystemClassLoader());
-		Map<A, Class<T>> result = new HashMap<>();
+		Map<A, Class<? extends T>> result = new HashMap<>();
 		for (String name : names) {
 			ClassLoader loader = layer.findLoader(name);
 			result.putAll(jarFile.stream().filter(entry -> {
@@ -95,7 +95,8 @@ public class AnnotatedPluginRegistererImpl<T, A extends Annotation> implements A
 						try {
 							Class<?> clazz = loader.loadClass(className);
 							if (classType.isInterface()) {
-								return clazz.isAnnotationPresent(annotationType) && Arrays.asList(clazz.getInterfaces()).contains(classType);
+								return clazz.isAnnotationPresent(annotationType)
+										&& Arrays.asList(clazz.getInterfaces()).contains(classType);
 							} else if (this.inherit) {
 								boolean isInstance = false;
 								Class<? extends Object> currentClass = clazz;
@@ -125,7 +126,7 @@ public class AnnotatedPluginRegistererImpl<T, A extends Annotation> implements A
 						}
 						return null;
 					}).collect(Collectors.toMap((clazz -> {
-						return (A) ((Class<T>) clazz).getAnnotation(annotationType);
+						return (A) ((Class<? extends T>) clazz).getAnnotation(annotationType);
 					}), Function.identity())));
 		}
 
@@ -133,14 +134,14 @@ public class AnnotatedPluginRegistererImpl<T, A extends Annotation> implements A
 	}
 
 	@Override
-	public Map<A, T> getMappedObjects(Object... params) throws InstantiationException, IllegalAccessException,
+	public Map<A, ? extends T> getMappedObjects(Object... params) throws InstantiationException, IllegalAccessException,
 			IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
 		Map<A, T> result = new HashMap<>();
 
 		if (params.length > 0) {
 			for (Path path : paths) {
 				for (Entry<File, JarFile> e : listJars(path.toFile()).entrySet()) {
-					for (Entry<A, Class<T>> entry : loadModule(e.getKey(), e.getValue()).entrySet()) {
+					for (Entry<A, Class<? extends T>> entry : loadModule(e.getKey(), e.getValue()).entrySet()) {
 						result.put(entry.getKey(),
 								entry.getValue()
 										.getDeclaredConstructor(Arrays.asList(params).stream().map(x -> x.getClass())
@@ -152,7 +153,7 @@ public class AnnotatedPluginRegistererImpl<T, A extends Annotation> implements A
 		} else {
 			for (Path path : paths) {
 				for (Entry<File, JarFile> e : listJars(path.toFile()).entrySet()) {
-					for (Entry<A, Class<T>> entry : loadModule(e.getKey(), e.getValue()).entrySet()) {
+					for (Entry<A, Class<? extends T>> entry : loadModule(e.getKey(), e.getValue()).entrySet()) {
 						result.put(entry.getKey(), entry.getValue().getDeclaredConstructor().newInstance());
 					}
 				}
@@ -163,8 +164,8 @@ public class AnnotatedPluginRegistererImpl<T, A extends Annotation> implements A
 	}
 
 	@Override
-	public Map<A, Class<T>> getMappedClasses() {
-		Map<A, Class<T>> result = new HashMap<>();
+	public Map<A, Class<? extends T>> getMappedClasses() {
+		Map<A, Class<? extends T>> result = new HashMap<>();
 		for (Path path : paths) {
 			for (Entry<File, JarFile> e : listJars(path.toFile()).entrySet()) {
 				result.putAll(loadModule(e.getKey(), e.getValue()));

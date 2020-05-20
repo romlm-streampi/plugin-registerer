@@ -38,14 +38,14 @@ public class PluginRegistererImpl<T> implements PluginRegisterer<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	private Collection<Class<T>> loadModule(File file, JarFile jarFile) {
+	private Collection<Class<? extends T>> loadModule(File file, JarFile jarFile) {
 		ModuleFinder finder = ModuleFinder.of(file.toPath());
 		List<String> names = finder.findAll().stream().map(x -> x.descriptor().name()).collect(Collectors.toList());
 
 		Configuration cf = parentLayer.configuration().resolve(finder, ModuleFinder.of(), names);
 
 		ModuleLayer layer = parentLayer.defineModulesWithOneLoader(cf, ClassLoader.getSystemClassLoader());
-		Collection<Class<T>> result = new ArrayList<>();
+		Collection<Class<? extends T>> result = new ArrayList<>();
 		for (String name : names) {
 			ClassLoader loader = layer.findLoader(name);
 			result.addAll(jarFile.stream().filter(entry -> {
@@ -80,7 +80,7 @@ public class PluginRegistererImpl<T> implements PluginRegisterer<T> {
 						}
 					}).map(className -> {
 						try {
-							return (Class<T>) loader.loadClass(className);
+							return (Class<? extends T>) loader.loadClass(className);
 						} catch (ClassNotFoundException e) {
 							e.printStackTrace();
 						}
@@ -116,8 +116,8 @@ public class PluginRegistererImpl<T> implements PluginRegisterer<T> {
 	}
 
 	@Override
-	public Collection<Class<T>> getMappedClasses() {
-		List<Class<T>> result = new ArrayList<>();
+	public Collection<Class<? extends T>> getMappedClasses() {
+		List<Class<? extends T>> result = new ArrayList<>();
 		for (Path path : paths) {
 			for (Entry<File, JarFile> e : listJars(path.toFile()).entrySet()) {
 				result.addAll(loadModule(e.getKey(), e.getValue()));
@@ -128,14 +128,14 @@ public class PluginRegistererImpl<T> implements PluginRegisterer<T> {
 	}
 
 	@Override
-	public Collection<T> getMappedObjects(Object... params) throws InstantiationException, IllegalAccessException,
+	public Collection<? extends T> getMappedObjects(Object... params) throws InstantiationException, IllegalAccessException,
 			IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
 		List<T> result = new ArrayList<>();
 
 		if (params.length > 0) {
 			for (Path path : paths) {
 				for (Entry<File, JarFile> e : listJars(path.toFile()).entrySet()) {
-					for (Class<T> clazz : loadModule(e.getKey(), e.getValue())) {
+					for (Class<? extends T> clazz : loadModule(e.getKey(), e.getValue())) {
 						result.add(clazz
 								.getDeclaredConstructor(Arrays.asList(params).stream().map(x -> x.getClass())
 										.collect(Collectors.toList()).toArray((Class<?>[]) new Class[0]))
@@ -146,7 +146,7 @@ public class PluginRegistererImpl<T> implements PluginRegisterer<T> {
 		} else {
 			for (Path path : paths) {
 				for (Entry<File, JarFile> e : listJars(path.toFile()).entrySet()) {
-					for (Class<T> clazz : loadModule(e.getKey(), e.getValue())) {
+					for (Class<? extends T> clazz : loadModule(e.getKey(), e.getValue())) {
 						result.add(clazz.getDeclaredConstructor().newInstance());
 					}
 				}

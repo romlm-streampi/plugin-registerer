@@ -5,9 +5,9 @@ import java.util.Collection;
 
 public interface PluginRegisterer<T> {
 
-	public Collection<Class<T>> getMappedClasses();
+	public Collection<Class<? extends T>> getMappedClasses();
 
-	public Collection<T> getMappedObjects(Object... params) throws InstantiationException, IllegalAccessException,
+	public Collection<? extends T> getMappedObjects(Object... params) throws InstantiationException, IllegalAccessException,
 			IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException;
 
 }
