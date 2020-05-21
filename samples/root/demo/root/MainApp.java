@@ -1,40 +1,67 @@
 package demo.root;
 
-import fr.streampi.plugin.PluginRegisterer;
+import fr.streampi.plugin.factories.PluginRegistererFactory;
+import fr.streampi.plugin.registerers.contract.AnnotatedPluginRegisterer;
+
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 
 public class MainApp {
 
 	public static void main(String... args) {
 
-		// this file should be a jar repo for your plugins
+		// this file should be a jar repo for your plugins or just a jar file
 		File rootFolder = new File("any path you want");
-		testPluginClass(rootFolder);
+		testAnnotatedPluginClass(rootFolder);
 		testPluginInterface(rootFolder);
 	}
 
-	public static void testPluginClass(File rootFolder) {
-		PluginRegisterer<? extends PluginClass, PluginAnnotation> registerer = PluginRegisterer.getPluginRegisterer(PluginClass.class, PluginAnnotation.class, rootFolder.toPath());
+	public static void testAnnotatedPluginClass(File rootFolder) {
+		AnnotatedPluginRegisterer<? extends PluginClass, PluginAnnotation> registerer = PluginRegistererFactory.getAnnotatedRegisterer(PluginClass.class, PluginAnnotation.class, paths)
 
-		Map<PluginAnnotation, ? extends PluginClass> pluginClassObjects = registerer.getRegisteredObjects();
-		pluginClassObjects.forEach((annotation, plugin) -> {
-			System.out.println("found object annotated "+ann.value());
-			System.out.println("executing plugin : ");
-			plugin.getDeclaredConstructor().newInstance().executeAny();
-			// does whatever you asked your plugin to do
-		});
+		try {
+			Map<PluginAnnotation, ? extends PluginClass> objects = registerer.getMappedObjects();
+			objects.values().forEach(obj -> obj.executeAny());
+			// outputs "executed PluginClassImpl plugin"
+			
+		} catch(InstantiationException e) {
+			e.printStackTrace();
+		} catch(IllegalAccessException e) {
+			e.printStackTrace();
+		} catch(IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch(InvocationTargetException e) {
+			e.printStackTrace();
+		} catch(NoSuchMethodException e) {
+			e.printStackTrace();
+		} catch(SecurityException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public static void testPluginInterface(File rootFolder) {
-		PluginRegisterer<? extends PluginInterface, PluginAnnotation> registerer = PluginRegisterer.getPluginRegisterer(PluginInterface.class, PluginAnnotation.class, rootFolder.toPath());
+		PluginRegisterer<? extends PluginInterface> registerer = PluginRegistererFactory.getRegisterer(PluginInterface.class, rootFolder.toPath());
 
-		Map<PluginAnnotation, ? extends PluginInterface> pluginInterfaceObjects = registerer.getRegisteredObjects();
-		pluginInterfaceObjects.forEach((annotation, plugin) -> {
-			System.out.println("found object annotated "+ann.value());
-			System.out.println("executing plugin : ");
-			plugin.getDeclaredConstructor().newInstance().executeAny();
-			// does whatever you asked your plugin to do
-		});
+		try {
+			List<? extends PluginClass> objects = new ArrayList<>(registerer.getMappedObjects());
+			objects.forEach(obj -> obj.executeAny());
+			// outputs "overrode plugin interface"
+			
+		} catch(InstantiationException e) {
+			e.printStackTrace();
+		} catch(IllegalAccessException e) {
+			e.printStackTrace();
+		} catch(IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch(InvocationTargetException e) {
+			e.printStackTrace();
+		} catch(NoSuchMethodException e) {
+			e.printStackTrace();
+		} catch(SecurityException e) {
+			e.printStackTrace();
+		}
 	}
 }
